@@ -364,22 +364,8 @@ td.past {
   <input type="hidden" id="formDate">
   <input type="hidden" id="formHour">
 
-  <label>Department:</label>
-  <select id="formDept">
-    <?php foreach($departments as $d): ?>
-      <option value="<?php echo $d; ?>"><?php echo $d; ?></option>
-    <?php endforeach; ?>
-  </select>
-
-  <label>Year Level:</label>
-  <select id="formYear">
-    <?php foreach($year_levels as $y): ?>
-      <option value="<?php echo $y; ?>"><?php echo $y; ?></option>
-    <?php endforeach; ?>
-  </select>
-
-  <label>Section:</label>
-  <input type="text" id="formSection" placeholder="Enter section" required>
+  <label>Year and Section:</label>
+  <input type="text" id="formYearSection" placeholder="e.g., 4-HOPE" required>
 
   <div class="modal-actions">
     <button class="modal-btn" onclick="saveSchedule()">Save</button>
@@ -388,24 +374,22 @@ td.past {
 </div>
 
 <script>
-function cellClicked(date,hour){
+function cellClicked(date, hour) {
   document.getElementById('formDate').value = date;
   document.getElementById('formHour').value = hour;
   document.getElementById('scheduleForm').style.display = 'block';
 }
 
-function closeForm(){
+function closeForm() {
   document.getElementById('scheduleForm').style.display = 'none';
 }
 
 function saveSchedule() {
   const date = document.getElementById('formDate').value;
   const hour = document.getElementById('formHour').value;
-  const department = document.getElementById('formDept').value;
-  const year_level = document.getElementById('formYear').value;
-  const section = document.getElementById('formSection').value;
+  const yearSection = document.getElementById('formYearSection').value.trim();
 
-  if (!date || !hour || !department || !year_level || !section) {
+  if (!date || !hour || !yearSection) {
     alert('Please fill out all fields.');
     return;
   }
@@ -413,31 +397,24 @@ function saveSchedule() {
   fetch('save_schedule.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `date=${encodeURIComponent(date)}&hour=${encodeURIComponent(hour)}&department=${encodeURIComponent(department)}&year_level=${encodeURIComponent(year_level)}&section=${encodeURIComponent(section)}`
+    body: `date=${encodeURIComponent(date)}&hour=${encodeURIComponent(hour)}&year_section=${encodeURIComponent(yearSection)}`
   })
   .then(res => res.json())
   .then(data => {
     if (!data.success) throw new Error(data.message || 'Failed to save schedule');
 
-    // ✅ close modal after success
     closeForm();
-
-    // ✅ optionally update table dynamically here
-    // e.g., renderScheduleCell(date, hour, department, year_level, section);
-
-    alert('Schedule saved!'); 
-      location.reload();
+    alert('Schedule saved!');
+    location.reload();
   })
-
   .catch(err => {
     alert('Error saving schedule: ' + (err.message || 'network error'));
   });
 }
-
 </script>
 
-  <footer>
-    &copy; <?= date('Y') ?> Talisay City College - Computer Lab SchedulingSystem
-  </footer>
+<footer>
+  &copy; <?= date('Y') ?> Talisay City College - Computer Lab Scheduling System
+</footer>
 </body>
 </html>

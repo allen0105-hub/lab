@@ -26,14 +26,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
-        // Check if slot already reserved with status 'Approved'
-$stmt = $pdo->prepare("SELECT id FROM reservations WHERE day_date = ? AND hour = ? AND status = 'Approved'");
-$stmt->execute([$date, $hour]);
-if ($stmt->fetch()) {
-    echo json_encode(['success' => false, 'message' => 'Slot already reserved with an approved reservation']);
-    exit;
-}
+        // Get user's section and classification from DB
+        $stmt = $pdo->prepare("SELECT name, section, classification FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$user) {
+            echo json_encode(['success' => false, 'message' => 'User not found']);
+            exit;
+        }
 
+        // Use section only
+        $sectionOnly = $user['section'];
+
+        // Check if slot already reserved with status 'Approved'
+        $stmt = $pdo->prepare("SELECT id FROM reservations WHERE day_date = ? AND hour = ? AND status = 'Approved'");
+        $stmt->execute([$date, $hour]);
+        if ($stmt->fetch()) {
+            echo json_encode(['success' => false, 'message' => 'Slot already reserved with an approved reservation']);
+            exit;
+        }
 
         // Check if admin created a schedule
         $stmt = $pdo->prepare("SELECT id FROM schedule WHERE day_date = ? AND hour = ?");
@@ -41,12 +52,13 @@ if ($stmt->fetch()) {
         $schedule = $stmt->fetch(PDO::FETCH_ASSOC);
         $scheduleId = $schedule ? $schedule['id'] : null;
 
-        // Insert reservation
+        // Insert reservation with section only
         $stmt = $pdo->prepare("
-            INSERT INTO reservations (user_id, schedule_id, day_date, hour, reservation_type, reason, status, created_at) 
-            VALUES (?, ?, ?, ?, ?, ?, 'Pending', NOW())
+            INSERT INTO reservations 
+            (user_id, schedule_id, day_date, hour, reservation_type, reason, section, status, created_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', NOW())
         ");
-        $stmt->execute([$userId, $scheduleId, $date, $hour, $reservation_type, $reason]);
+        $stmt->execute([$userId, $scheduleId, $date, $hour, $reservation_type, $reason, $sectionOnly]);
 
         echo json_encode(['success' => true, 'message' => 'Reservation saved successfully']);
     } catch (Exception $e) {
@@ -55,3 +67,4 @@ if ($stmt->fetch()) {
 } else {
     echo json_encode(['success' => false, 'message' => 'Invalid request']);
 }
+?>

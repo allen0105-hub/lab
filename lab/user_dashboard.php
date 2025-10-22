@@ -216,7 +216,7 @@ td.past {
                 </div>
                 <div class="user-meta">
                     <h3><?php echo htmlspecialchars($user['name']); ?></h3>
-                    <p><?php echo htmlspecialchars($user['department']); ?> — <?php echo htmlspecialchars($user['classification']); ?></p>
+                    <p><?php echo htmlspecialchars($user['section']); ?> — <?php echo htmlspecialchars($user['classification']); ?></p>
                 </div>
             </div>
         </div>
@@ -224,7 +224,7 @@ td.past {
         <div>
             <button class="control-btn" onclick="location.href='user_info.php'">Edit Info</button>
             <button class="control-btn" onclick="document.getElementById('reservationSection').scrollIntoView({behavior:'smooth'})">My Reservations</button>
-            <button class="control-btn" onclick="location.href='logout.php'">Sign Out</button>
+            <button class="control-btn" onclick="location.href='user_info.php'">Sign Out</button>
         </div>
     </section>
 
@@ -267,12 +267,12 @@ td.past {
                     }
                 }
 
-                // check admin grid
-                if(empty($text) && isset($grid[$date][$hour])){
-                    $s = $grid[$date][$hour];
-                    $text = htmlspecialchars($s['department'])." | ".htmlspecialchars($s['year_level'])." | ".htmlspecialchars($s['section']);
-                    $finalClass = $isPast ? "past" : "filled";
-                }
+               // check admin grid
+if (empty($text) && isset($grid[$date][$hour])) {
+    $s = $grid[$date][$hour];
+    $text = htmlspecialchars($s['year_section']); // ✅ replaced 3 fields with one
+    $finalClass = $isPast ? "past" : "filled";
+}
 
                 // FIX: mark past empty slots as past
                 if(empty($text) && $isPast){
