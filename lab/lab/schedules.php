@@ -55,10 +55,13 @@ $year_levels = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
 <title>TCC — Manage Schedules</title>
 <!-- Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Poppins:wght@500;700&display=swap" rel="stylesheet">
+
 <style>
 /* ============================
    TALISAY CITY COLLEGE THEME
    ============================ */
+
+<style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; font-family: 'Roboto', sans-serif; overflow-x:hidden; overflow-y:auto; }
 
@@ -204,119 +207,62 @@ td.past {
 
 
 /* Modal */
-#scheduleModal {
-  display: none;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 9999;
-  width: 90%;
-  max-width: 500px; /* bigger modal */
-  background: #f9f9ff;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-  font-family: 'Poppins', sans-serif;
+#scheduleForm {
+  display:none;
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  z-index:9999;
+  width:90%;
+  max-width:360px;
+  background:#fff;
+  border-radius:12px;
+  padding:16px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
 }
-
-/* Modal title */
-#scheduleModal h3 {
-  color: #003366;
-  margin-bottom: 16px;
-  font-size: 20px;
-  text-align: center;
-  font-weight: 700;
+#scheduleForm h3 {
+  font-family:'Poppins', sans-serif;
+  color:#003366;
+  margin-bottom:10px;
+  font-size:18px;
 }
-
-/* Labels & Inputs */
-#scheduleModal label {
-  display: block;
-  margin-top: 12px;
-  color: #003366;
-  font-weight: 600;
-  font-size: 14px;
+#scheduleForm label {
+  display:block;
+  margin-top:8px;
+  color:#003366;
+  font-weight:600;
+  font-size:13px;
 }
-#scheduleModal select, 
-#scheduleModal textarea, 
-#scheduleModal input {
-  width: 100%;
-  padding: 8px 10px;
-  margin-top: 6px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-size: 14px;
-  outline: none;
-  transition: border 0.2s, box-shadow 0.2s;
+#scheduleForm select, 
+#scheduleForm textarea, 
+#scheduleForm input {
+  width:100%;
+  padding:6px;
+  margin-top:4px;
+  border-radius:6px;
+  border:1px solid #ccc;
+  font-size:13px;
 }
-#scheduleModal select:focus, 
-#scheduleModal textarea:focus, 
-#scheduleModal input:focus {
-  border-color: #0059b3;
-  box-shadow: 0 0 6px rgba(0,89,179,0.3);
+#scheduleForm .modal-actions {
+  display:flex;
+  gap:10px;
+  margin-top:12px;
+  justify-content:flex-end;
 }
-
-/* Modal actions / buttons */
-#scheduleModal .modal-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 20px;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-}
-
-/* Button styles */
 .modal-btn {
-  padding: 10px 16px;
-  border-radius: 10px;
-  border: none;
-  background: linear-gradient(135deg, #0059b3, #003366);
-  color: #fff;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.2s;
+  padding:8px 10px;
+  border-radius:6px;
+  border:none;
+  background:#0059b3;
+  color:#fff;
+  cursor:pointer;
+  font-size:13px;
 }
-.modal-btn:hover {
-  background: linear-gradient(135deg, #003366, #001f4d);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-}
-
 .modal-btn.cancel {
-  background: #ccc;
-  color: #222;
+  background:#ccc;
+  color:#222;
 }
-.modal-btn.cancel:hover {
-  background: #bbb;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-
-/* Mobile responsive modal */
-@media (max-width: 600px) {
-  #scheduleModal {
-    width: 95%;
-    padding: 16px;
-  }
-  #scheduleModal h3 {
-    font-size: 18px;
-  }
-  #scheduleModal label {
-    font-size: 13px;
-  }
-  #scheduleModal select, 
-  #scheduleModal textarea, 
-  #scheduleModal input {
-    font-size: 13px;
-    padding: 6px 8px;
-  }
-  .modal-btn {
-    flex: 1 1 100%;
-    text-align: center;
-  }
-}
-
  /* Footer */
     footer{
       text-align:center;
@@ -373,56 +319,39 @@ td.past {
     <?php foreach (['current'=>'','next'=>''] as $key=>$title): ?>
       <h3 style="color:#003366; margin:12px 0;"><?php echo $title; ?></h3>
    <table>
-  <thead>
-      <tr>
-          <th>Hour</th>
-          <?php foreach ($weeks[$key] as $date => $dt): ?>
-              <th><?php echo $dt->format('D M d'); ?></th>
-          <?php endforeach; ?>
-      </tr>
-  </thead>
-  <tbody>
-      <?php foreach ($hours as $hour): ?>
-          <tr>
-              <th><?php echo date("g A", strtotime("$hour:00")); ?></th>
-              <?php foreach ($weeks[$key] as $date => $dt): ?>
-                  <?php
-                      // Determine if slot is past
-                      $slotTime = new DateTime($dt->format('Y-m-d') . ' ' . str_pad($hour, 2, '0', STR_PAD_LEFT) . ':00:00');
-                      $isPast = $slotTime < new DateTime();
+    <thead>
+        <tr>
+            <th>Hour</th>
+            <?php foreach ($weeks[$key] as $date => $dt): ?>
+                <th><?php echo $dt->format('D M d'); ?></th>
+            <?php endforeach; ?>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach ($hours as $hour): ?>
+            <tr>
+                <th><?php echo date("g A", strtotime("$hour:00")); ?></th>
+                <?php foreach ($weeks[$key] as $date => $dt): ?>
+                    <?php
+                        $slotTime = new DateTime($dt->format('Y-m-d') . ' ' . str_pad($hour, 2, '0', STR_PAD_LEFT) . ':00:00');
+                        $isPast = $slotTime < new DateTime();
 
-                      // Determine cell class and text
-                      if (isset($grid[$date][$hour])) {
-                          $class = $isPast ? 'past' : 'filled';
-                          $text = htmlspecialchars($grid[$date][$hour]['department']); // only dept
-                      } else {
-                          $class = $isPast ? 'past' : 'empty';
-                          $text = '';
-                      }
-
-                      // Onclick only for future cells
-                      $onclick = '';
-                      if (!$isPast) {
-                          $onclick = isset($grid[$date][$hour])
-                              ? "onclick=\"openScheduleModal('{$date}', {$hour}, true)\""
-                              : "onclick=\"openScheduleModal('{$date}', {$hour}, false)\"";
-                      }
-                  ?>
-                 <td class="<?php echo $class; ?>"
-    data-date="<?php echo $date; ?>"
-    data-hour="<?php echo $hour; ?>"
-    data-filled="<?php echo isset($grid[$date][$hour]) ? '1':'0'; ?>"
-    data-dept="<?php echo isset($grid[$date][$hour]) ? htmlspecialchars($grid[$date][$hour]['department']) : ''; ?>"
-    data-year="<?php echo isset($grid[$date][$hour]) ? htmlspecialchars($grid[$date][$hour]['year_level']) : ''; ?>"
-    data-section="<?php echo isset($grid[$date][$hour]) ? htmlspecialchars($grid[$date][$hour]['section']) : ''; ?>"
->
-    <div class="schedule-info"><?php echo $text; ?></div>
-</td>
-
-              <?php endforeach; ?>
-          </tr>
-      <?php endforeach; ?>
-  </tbody>
+                        if (isset($grid[$date][$hour])) {
+                            $s = $grid[$date][$hour];
+                            $text = htmlspecialchars($s['department']) . " | " . htmlspecialchars($s['year_level']) . " | " . htmlspecialchars($s['section']);
+                            $class = $isPast ? "past" : "filled"; // <-- FIXED
+                        } else {
+                            $text = "";
+                            $class = $isPast ? "past" : "empty";
+                        }
+                    ?>
+                    <td class="<?php echo $class; ?>" <?php echo $isPast ? "" : "onclick=\"cellClicked('{$date}',{$hour})\""; ?>>
+                        <div class="schedule-info"><?php echo $text; ?></div>
+                    </td>
+                <?php endforeach; ?>
+            </tr>
+        <?php endforeach; ?>
+    </tbody>
 </table>
 
     <?php endforeach; ?>
@@ -430,140 +359,37 @@ td.past {
 </main>
 
 <!-- Schedule Modal -->
-<div id="scheduleModal" class="modal" style="display:none;">
-  <div class="modal-content">
-    <h3 id="modalTitle">Schedule</h3>
+<div id="scheduleForm">
+  <h3>Add Schedule</h3>
+  <input type="hidden" id="formDate">
+  <input type="hidden" id="formHour">
 
-    <!-- View Details -->
-    <div id="viewDetails" style="display:none;">
-      <p><strong>Department:</strong> <span id="viewDept"></span></p>
-      <p><strong>Year Level:</strong> <span id="viewYear"></span></p>
-      <p><strong>Section:</strong> <span id="viewSection"></span></p>
-      <div style="margin-top:10px;">
-        <button class="modal-btn" onclick="showEditForm()">Edit</button>
-        <button class="modal-btn cancel" onclick="deleteSchedule()">Delete</button>
-        <button class="modal-btn cancel" onclick="closeModal()">Close</button>
-      </div>
-    </div>
+  <label>Year and Section:</label>
+  <input type="text" id="formYearSection" placeholder="e.g., 4-HOPE" required>
 
-    <!-- Add/Edit Form -->
-    <div id="formContainer" style="display:none;">
-      <input type="hidden" id="modalFormDate">
-      <input type="hidden" id="modalFormHour">
-
-      <label>Department:</label>
-      <select id="modalFormDept">
-        <?php foreach($departments as $d): ?>
-          <option value="<?php echo $d; ?>"><?php echo $d; ?></option>
-        <?php endforeach; ?>
-      </select>
-
-      <label>Year Level:</label>
-      <select id="modalFormYear">
-        <?php foreach($year_levels as $y): ?>
-          <option value="<?php echo $y; ?>"><?php echo $y; ?></option>
-        <?php endforeach; ?>
-      </select>
-
-      <label>Section:</label>
-      <input type="text" id="modalFormSection" placeholder="Enter section" required>
-
-      <div class="modal-actions">
-        <button class="modal-btn" onclick="saveSchedule(true)">Save</button>
-        <button class="modal-btn cancel" onclick="closeModal()">Cancel</button>
-      </div>
-    </div>
-
+  <div class="modal-actions">
+    <button class="modal-btn" onclick="saveSchedule()">Save</button>
+    <button class="modal-btn cancel" onclick="closeForm()">Cancel</button>
   </div>
 </div>
 
 <script>
-let currentDate = '';
-let currentHour = '';
-let isFilled = false;
-
-function openScheduleModal(date, hour, filled) {
-  currentDate = date;
-  currentHour = hour;
-  isFilled = filled;
-
-  const modal = document.getElementById('scheduleModal');
-  const viewDetails = document.getElementById('viewDetails');
-  const formContainer = document.getElementById('formContainer');
-  const modalTitle = document.getElementById('modalTitle');
-
-  if(filled) {
-    // Filled: show View Details first
-    const cell = document.querySelector(`td[data-date="${date}"][data-hour="${hour}"]`);
-const dept = cell.dataset.dept || '';
-const year = cell.dataset.year || '';
-const section = cell.dataset.section || '';
-
-
-    modalTitle.innerText = 'Schedule Details';
-    viewDetails.style.display = 'block';
-    formContainer.style.display = 'none';
-
-    document.getElementById('viewDept').innerText = dept;
-    document.getElementById('viewYear').innerText = year;
-    document.getElementById('viewSection').innerText = section;
-
-  } else {
-    // Empty: show Add Form
-    modalTitle.innerText = 'Add Schedule';
-    viewDetails.style.display = 'none';
-    formContainer.style.display = 'block';
-
-    document.getElementById('modalFormDate').value = date;
-    document.getElementById('modalFormHour').value = hour;
-    document.getElementById('modalFormDept').selectedIndex = 0;
-    document.getElementById('modalFormYear').selectedIndex = 0;
-    document.getElementById('modalFormSection').value = '';
-  }
-
-  modal.style.display = 'block';
+function cellClicked(date, hour) {
+  document.getElementById('formDate').value = date;
+  document.getElementById('formHour').value = hour;
+  document.getElementById('scheduleForm').style.display = 'block';
 }
 
-function closeModal() {
-  document.getElementById('scheduleModal').style.display = 'none';
+function closeForm() {
+  document.getElementById('scheduleForm').style.display = 'none';
 }
 
-function showEditForm() {
-  document.getElementById('viewDetails').style.display = 'none';
-  document.getElementById('formContainer').style.display = 'block';
+function saveSchedule() {
+  const date = document.getElementById('formDate').value;
+  const hour = document.getElementById('formHour').value;
+  const yearSection = document.getElementById('formYearSection').value.trim();
 
-  document.getElementById('modalFormDate').value = currentDate;
-  document.getElementById('modalFormHour').value = currentHour;
-
-  document.getElementById('modalFormDept').value = document.getElementById('viewDept').innerText;
-  document.getElementById('modalFormYear').value = document.getElementById('viewYear').innerText;
-  document.getElementById('modalFormSection').value = document.getElementById('viewSection').innerText;
-}
-
-function deleteSchedule() {
-  if(!confirm('Are you sure you want to delete this schedule?')) return;
-
-  fetch('delete_schedule.php', {
-    method:'POST',
-    headers:{'Content-Type':'application/x-www-form-urlencoded'},
-    body:`date=${encodeURIComponent(currentDate)}&hour=${encodeURIComponent(currentHour)}`
-  }).then(res=>res.json())
-    .then(data=>{
-      if(!data.success) throw new Error(data.message || 'Failed');
-      alert('Deleted successfully');
-      closeModal();
-      location.reload();
-    }).catch(err=>alert('Error: '+err.message));
-}
-
-function saveSchedule(isEdit=false) {
-  const date = document.getElementById('modalFormDate').value;
-  const hour = document.getElementById('modalFormHour').value;
-  const department = document.getElementById('modalFormDept').value;
-  const year_level = document.getElementById('modalFormYear').value;
-  const section = document.getElementById('modalFormSection').value;
-
-  if (!date || !hour || !department || !year_level || !section) {
+  if (!date || !hour || !yearSection) {
     alert('Please fill out all fields.');
     return;
   }
@@ -571,36 +397,24 @@ function saveSchedule(isEdit=false) {
   fetch('save_schedule.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `date=${encodeURIComponent(date)}&hour=${encodeURIComponent(hour)}&department=${encodeURIComponent(department)}&year_level=${encodeURIComponent(year_level)}&section=${encodeURIComponent(section)}&edit=${isEdit}`
+    body: `date=${encodeURIComponent(date)}&hour=${encodeURIComponent(hour)}&year_section=${encodeURIComponent(yearSection)}`
   })
   .then(res => res.json())
   .then(data => {
-    if(!data.success) throw new Error(data.message || 'Failed');
-    alert(isEdit ? 'Schedule updated!' : 'Schedule saved!');
-    closeModal();
+    if (!data.success) throw new Error(data.message || 'Failed to save schedule');
+
+    closeForm();
+    alert('Schedule saved!');
     location.reload();
   })
-  .catch(err=>alert('Error saving schedule: ' + (err.message||'network error')));
+  .catch(err => {
+    alert('Error saving schedule: ' + (err.message || 'network error'));
+  });
 }
-// Make all future cells clickable
-document.querySelectorAll('td[data-date]').forEach(td => {
-    const isPast = td.classList.contains('past');
-    if (!isPast) {
-        td.addEventListener('click', () => {
-            const date = td.dataset.date;
-            const hour = td.dataset.hour;
-            const filled = td.dataset.filled === '1';
-
-            openScheduleModal(date, hour, filled);
-        });
-    }
-});
-
 </script>
 
-
-  <footer>
-    &copy; <?= date('Y') ?> Talisay City College - Computer Lab SchedulingSystem
-  </footer>
+<footer>
+  &copy; <?= date('Y') ?> Talisay City College - Computer Lab Scheduling System
+</footer>
 </body>
 </html>

@@ -6,49 +6,36 @@ $error = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name']);
-    $department = trim($_POST['department']);
+    $section = trim($_POST['section']); // Combined Year & Section
     $classification = trim($_POST['classification']);
-    $recaptchaResponse = $_POST['g-recaptcha-response'];
 
-    if (empty($name) || empty($department) || empty($classification)) {
+    if (empty($name) || empty($section) || empty($classification)) {
         $error = "All fields are required.";
-    } elseif (empty($recaptchaResponse)) {
-        $error = "Please complete the reCAPTCHA.";
     } else {
-        // Verify reCAPTCHA
-        $recaptchaSecret = "6LdJ7NsrAAAAAMGDroyusXryKgq6qWtDi-RuckgO";
-        $verifyResponse = file_get_contents(
-            "https://www.google.com/recaptcha/api/siteverify?secret=" 
-            . $recaptchaSecret . "&response=" . $recaptchaResponse
-        );
-        $responseData = json_decode($verifyResponse, true);
+        // Check if user already exists
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE name = ?");
+        $stmt->execute([$name]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$responseData["success"]) {
-            $error = "reCAPTCHA verification failed. Please try again.";
+        if ($user) {
+            $userId = $user['id'];
         } else {
-            // Save or fetch user
-            $stmt = $pdo->prepare("SELECT id FROM users WHERE name = ?");
-            $stmt->execute([$name]);
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($user) {
-                $userId = $user['id'];
-            } else {
-                $stmt = $pdo->prepare("INSERT INTO users (name, department, classification) VALUES (?, ?, ?)");
-                $stmt->execute([$name, $department, $classification]);
-                $userId = $pdo->lastInsertId();
-            }
-
-            $_SESSION['user_id'] = $userId;
-            $_SESSION['user'] = [
-                'name' => $name,
-                'department' => $department,
-                'classification' => $classification
-            ];
-
-            header("Location: user_dashboard.php");
-            exit();
+            // Insert new user (table has section instead of department)
+            $stmt = $pdo->prepare("INSERT INTO users (name, section, classification, created_at) VALUES (?, ?, ?, NOW())");
+            $stmt->execute([$name, $section, $classification]);
+            $userId = $pdo->lastInsertId();
         }
+
+        // Save session
+        $_SESSION['user_id'] = $userId;
+        $_SESSION['user'] = [
+            'name' => $name,
+            'section' => $section,
+            'classification' => $classification
+        ];
+
+        header("Location: user_dashboard.php");
+        exit();
     }
 }
 ?>
@@ -59,9 +46,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TCC — User Info</title>
 <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-
-<!-- Google reCAPTCHA -->
-<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 
 <style>
 body, html {
@@ -75,7 +59,6 @@ body, html {
     background-size: cover;
 }
 
-/* Overlay for readability */
 .overlay {
     position: fixed;
     inset: 0;
@@ -83,7 +66,6 @@ body, html {
     z-index: -1;
 }
 
-/* Form box */
 .form-container {
     width: 100%;
     max-width: 340px;
@@ -95,13 +77,11 @@ body, html {
     text-align: center;
 }
 
-/* Logo */
 .form-container img {
     height: 70px;
     margin-bottom: 12px;
 }
 
-/* Heading */
 h2 {
     font-family: 'Merriweather', serif;
     font-size: 1.6rem;
@@ -136,18 +116,6 @@ button {
     transition: background 0.3s, transform 0.2s;
 }
 button:hover { background:#002244; transform: scale(1.05); }
-
-/* reCAPTCHA centering */
-.recaptcha-wrapper {
-    display: flex;
-    justify-content: center;
-    margin: 15px 0;
-    transform: scale(0.92);
-    transform-origin: 0 0;
-}
-@media (max-width: 400px) {
-    .recaptcha-wrapper { transform: scale(0.85); }
-}
 </style>
 </head>
 <body>
@@ -164,16 +132,12 @@ button:hover { background:#002244; transform: scale(1.05); }
       <label>Name:</label>
       <input type="text" name="name" required>
     </div>
+
     <div class="form-group">
-      <label>Department:</label>
-      <select name="department" required>
-        <option value="">Select Department</option>
-        <option value="BIT">BIT</option>
-        <option value="BSHM">BSHM</option>
-        <option value="BSED">BSED</option>
-        <option value="BEED">BEED</option>
-      </select>
+      <label>Year and Section:</label>
+      <input type="text" name="section" placeholder="e.g., 4-HOPE" required>
     </div>
+
     <div class="form-group">
       <label>Classification:</label>
       <select name="classification" required>
@@ -182,11 +146,6 @@ button:hover { background:#002244; transform: scale(1.05); }
         <option value="Student">Student</option>
         <option value="Teacher">Teacher</option>
       </select>
-    </div>
-
-    <!-- reCAPTCHA -->
-    <div class="recaptcha-wrapper">
-      <div class="g-recaptcha" data-sitekey="6LdJ7NsrAAAAALuBdOxf-fQYinLEQ7V3I0kEPe18"></div>
     </div>
 
     <button type="submit">Proceed</button>

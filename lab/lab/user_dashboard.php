@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once "includes/config.php";
+require_once "includes/config.php"; // make sure $pdo is defined here
 
 date_default_timezone_set('Asia/Manila');
 
@@ -11,7 +11,17 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['user'])) {
 }
 
 $userId = $_SESSION['user_id'];
-$user   = $_SESSION['user'];
+$user = $_SESSION['user'];
+
+// Fetch schedules
+$stmt = $pdo->query("SELECT * FROM schedule");
+$schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Organize schedules by date and hour
+$grid = [];
+foreach ($schedules as $s) {
+    $grid[$s['day_date']][$s['hour']] = $s;
+}
 
 // Current week dates (Mon - Sun)
 $today = new DateTime();
@@ -26,39 +36,7 @@ for ($i = 0; $i < 7; $i++) {
 // Hours 7AM–9PM
 $hours = range(7, 21);
 
-// Fetch schedules (admin-set)
-$stmt = $pdo->query("SELECT * FROM schedule");
-$schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Organize schedules by slot
-$grid = [];
-foreach ($schedules as $s) {
-    $grid[$s['day_date']][$s['hour']] = $s;
-}
-
-// Fetch all approved reservations for this week
-$startDate = array_key_first($weeks);
-$endDate   = array_key_last($weeks);
-
-$stmt = $pdo->prepare("
-  SELECT r.id, r.day_date, r.hour, r.reservation_type, r.reason, r.status,
-       u.name, u.department, u.classification
-FROM reservations r
-JOIN users u ON r.user_id = u.id
-WHERE r.status = 'Approved'
-AND r.day_date BETWEEN ? AND ?
-
-");
-$stmt->execute([$startDate, $endDate]);
-$approvedReservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Organize approved reservations by slot
-$approvedBySlot = [];
-foreach ($approvedReservations as $ar) {
-    $approvedBySlot[$ar['day_date']][$ar['hour']][] = $ar;
-}
-
-// Fetch current user's reservations (future only)
+// Fetch user reservations (UPCOMING ONLY, ORDERED BY DATE ASC)
 $stmt = $pdo->prepare("
     SELECT r.day_date, r.hour, r.reservation_type, r.reason, r.status
     FROM reservations r
@@ -196,23 +174,6 @@ td.past {
   cursor:not-allowed; 
   pointer-events:none;
 }
-.cell-content {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    justify-content: center;
-    align-items: center;
-    font-size: 12px;
-    padding: 2px;
-}
-
-.cell-content span {
-    background: #e6f0ff;
-    border: 1px solid #99bbff;
-    border-radius: 6px;
-    padding: 2px 6px;
-    white-space: nowrap;
-}
 
 
 /* Modal */
@@ -255,257 +216,129 @@ td.past {
                 </div>
                 <div class="user-meta">
                     <h3><?php echo htmlspecialchars($user['name']); ?></h3>
-                    <p><?php echo htmlspecialchars($user['department']); ?> — <?php echo htmlspecialchars($user['classification']); ?></p>
+                    <p><?php echo htmlspecialchars($user['section']); ?> — <?php echo htmlspecialchars($user['classification']); ?></p>
                 </div>
             </div>
         </div>
 
         <div>
             <button class="control-btn" onclick="location.href='user_info.php'">Edit Info</button>
-            <button class="control-btn" onclick="location.href='my_reservations.php'">My Reservations</button>
-            <button class="control-btn" onclick="location.href='user_info'">Sign Out</button>
+            <button class="control-btn" onclick="document.getElementById('reservationSection').scrollIntoView({behavior:'smooth'})">My Reservations</button>
+            <button class="control-btn" onclick="location.href='user_info.php'">Sign Out</button>
         </div>
     </section>
-    
 
     <!-- Weekly Schedule Table -->
     <section class="schedule-wrap">
-        <h2 style="background: #0059b3; border:none; font-family:'Poppins', sans-serif; font-size:20px; color:white; padding:8px 14px; border-radius:8px; margin:14px 0; text-align:center;">
-            Current Week Schedule
-        </h2>
+        <h2 
+  style="background: #0059b3; border:none; font-family:'Poppins', sans-serif; font-size:20px; color:white; padding:8px 14px; border-radius:8px; cursor:pointer; margin:14px 0; text-align:center; font-weight:500; transition: background 0.2s;"
+  onmouseover="this.style.background='#004080';"
+  onmouseout="this.style.background='#0059b3';">
+  Current Week Schedule
+</h2>
 
-        <table>
-        <thead>
-    <tr>
-        <th>Hour</th>
-        <?php foreach ($weeks as $date => $dt) echo "<th>".$dt->format('D M d')."</th>"; ?>
-    </tr>
-</thead>
-<tbody>
-    <?php foreach ($hours as $hour): ?>
-    <tr>
-        <th><?php echo date("h A", strtotime("$hour:00")); ?></th>
-        <?php foreach ($weeks as $date => $dt): ?>
-        <?php
-            $slotTime = new DateTime($date . " $hour:00");
-            $now = new DateTime();
-            $isPast = $slotTime < $now; // real-time past check
+    <table>
+    <thead>
+        <tr>
+            <th>Hour</th>
+            <?php foreach ($weeks as $date => $dt) echo "<th>".$dt->format('D M d')."</th>"; ?>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach ($hours as $hour): ?>
+        <tr>
+            <th><?php echo date("h A", strtotime("$hour:00")); ?></th>
+            <?php foreach ($weeks as $date => $dt): ?>
+            <?php
+                $slotTime = new DateTime($date . " $hour:00");
+                $now = new DateTime();
+                $isPast = $slotTime < $now;
 
-            $texts = [];
-            $finalClass = "empty";
+                $text = "";
+                $finalClass = "empty";
 
-            // 1. Check if current user reserved this slot
-            $userRes = null;
-            foreach($activities as $act){
-                if($act['day_date']==$date && (int)$act['hour']==(int)$hour){
-                    $userRes = $act;
-                    break;
+                // check user activities
+                foreach($activities as $act){
+                    if($act['day_date']==$date && (int)$act['hour']==(int)$hour){
+                        $text = htmlspecialchars($user['name']) . " | " . htmlspecialchars($act['status']);
+                        $finalClass = strtolower($act['status']);
+                        if($isPast) $finalClass = "past";
+                        break;
+                    }
                 }
-            }
-            if($userRes){
-                $texts[] = htmlspecialchars($user['name']);
-                $finalClass = strtolower($userRes['status']);
-            }
 
-            // 2. Add other approved reservations (exclude current user)
-            $slotReservations = $approvedBySlot[$date][$hour] ?? [];
-            foreach($slotReservations as $res){
-                if($res['name'] !== $user['name']){
-                    $texts[] = htmlspecialchars($res['name']);
-                    $finalClass = "approved";
+               // check admin grid
+if (empty($text) && isset($grid[$date][$hour])) {
+    $s = $grid[$date][$hour];
+    $text = htmlspecialchars($s['year_section']); // ✅ replaced 3 fields with one
+    $finalClass = $isPast ? "past" : "filled";
+}
+
+                // FIX: mark past empty slots as past
+                if(empty($text) && $isPast){
+                    $finalClass = "past";
                 }
-            }
-
-            // 3. Admin schedule (if empty)
-            if(empty($texts) && isset($grid[$date][$hour])){
-                $s = $grid[$date][$hour];
-                $texts[] = htmlspecialchars($s['department']);
-                $finalClass = "filled";
-            }
-
-            // 4. Mark as past if slot is in the past (overrides other statuses)
-            if($isPast){
-                $finalClass = "past";
-            }
-
-            $text = implode("<br>", $texts);
-        ?>
-        <td class="<?php echo $finalClass; ?>"
-            <?php if(!$isPast): ?>
-                onclick="<?php echo $finalClass=='empty'
-                    ? "openReservationForm('$date','$hour')"
-                    : "openDetails('$date','$hour')"; ?>"
-            <?php endif; ?>
-        >
-            <div class="cell-content">
+            ?>
+            <td class="<?php echo $finalClass; ?>"
+                <?php if(!$isPast && $finalClass=="empty") echo "onclick=\"openReservationForm('$date','$hour')\""; ?>
+                title="<?php echo $finalClass==='past' ? 'This slot is in the past.' : ($finalClass==='filled' ? 'Already scheduled by admin.' : 'Click to reserve.'); ?>">
                 <?php echo $text; ?>
-            </div>
-        </td>
+            </td>
+            <?php endforeach; ?>
+        </tr>
         <?php endforeach; ?>
-    </tr>
-    <?php endforeach; ?>
-</tbody>
+    </tbody>
+</table>
 
+    </section>
+
+    <!-- User Reservations -->
+    <section class="reservations" id="reservationSection">
+        <h2 style="font-family:'Merriweather', serif; color:#003366; margin-top:22px;">My Reservations</h2>
+        <table>
+            <thead><tr><th>Date</th><th>Hour</th><th>Type</th><th>Reason</th><th>Status</th></tr></thead>
+            <tbody>
+            <?php if(empty($activities)): ?>
+                <tr><td colspan="5" style="padding:14px;text-align:center;">No reservations yet</td></tr>
+            <?php else: foreach($activities as $act):
+                $slotTime = new DateTime($act['day_date'].' '.str_pad($act['hour'],2,'0',STR_PAD_LEFT).':00:00');
+                $displayStatus = $slotTime<new DateTime()?'Past':$act['status'];
+            ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($act['day_date']); ?></td>
+                    <td><?php echo date("g A", strtotime($act['hour'].":00")); ?></td>
+                    <td><?php echo htmlspecialchars($act['reservation_type']); ?></td>
+                    <td><?php echo htmlspecialchars($act['reason']); ?></td>
+                    <td><?php echo htmlspecialchars($displayStatus); ?></td>
+                </tr>
+            <?php endforeach; endif; ?>
+            </tbody>
         </table>
     </section>
 </main>
-<!-- Reservation Modal (Professional Design) -->
-<div id="reservationForm" class="modal">
-    <div class="modal-header">
-        <h3 id="modalTitle">Make Reservation</h3>
-        <span class="close-btn" onclick="closeReservationForm()">&times;</span>
-    </div>
-    <div class="modal-body">
-        <input type="hidden" id="resDate">
-        <input type="hidden" id="resHour">
 
-        <label for="resType">Reservation Type:</label>
-        <select id="resType" required>
-            <option value="">Select Type</option>
-            <option value="Solo">Solo</option>
-            <option value="Group">Group</option>
-            <option value="Class">Class</option>    
-        </select>
-
-        <label for="resReason">Reason:</label>
-        <textarea id="resReason" rows="4" placeholder="Enter reason" required></textarea>
-    </div>
+<!-- Reservation Modal -->
+<div id="reservationForm">
+    <h3>Make Reservation</h3>
+    <input type="hidden" id="resDate">
+    <input type="hidden" id="resHour">
+    <label for="resType">Reservation Type:</label>
+    <select id="resType" required>
+        <option value="">Select Type</option>
+        <option value="Solo">Solo</option>
+        <option value="Group">Group</option>
+        <option value="Class">Class</option>
+    </select>
+    <label for="resReason">Reason:</label>
+    <textarea id="resReason" rows="4" placeholder="Enter reason" required></textarea>
     <div class="modal-actions">
-        <button class="modal-btn save" onclick="submitReservation()">Reserve</button>
+        <button class="modal-btn" onclick="submitReservation()">Reserve</button>
         <button class="modal-btn cancel" onclick="closeReservationForm()">Cancel</button>
     </div>
 </div>
 <div id="modalBackdrop" onclick="closeReservationForm()"></div>
 
-<style>
-/* Modal Base */
-.modal {
-    display: none;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 90%;
-    max-width: 400px;
-    background: #fffdf6;
-    border: 3px solid #003366;
-    border-radius: 16px;
-    box-shadow: 0 30px 80px rgba(0,0,0,0.35);
-    z-index: 10000;
-    font-family: 'Roboto', sans-serif;
-    overflow: hidden;
-    animation: fadeIn 0.3s ease;
-}
-
-/* Backdrop */
-#modalBackdrop {
-    display: none;
-    position: fixed;
-    top:0; left:0;
-    width:100%; height:100%;
-    background: rgba(0,0,0,0.45);
-    z-index: 9999;
-}
-
-/* Header */
-.modal-header {
-    background: #003366;
-    color: #FFD700;
-    padding: 14px 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.modal-header h3 {
-    margin: 0;
-    font-family: 'Poppins', sans-serif;
-    font-size: 18px;
-}
-.close-btn {
-    font-size: 22px;
-    cursor: pointer;
-    transition: color 0.2s;
-}
-.close-btn:hover { color: #ffcc00; }
-
-/* Body */
-.modal-body {
-    padding: 16px 18px;
-}
-.modal-body label {
-    display:block;
-    margin-top: 10px;
-    font-weight: 700;
-    color: #003366;
-    font-size: 14px;
-}
-.modal-body input, 
-.modal-body select, 
-.modal-body textarea {
-    width:100%;
-    margin-top: 6px;
-    padding:8px 10px;
-    border-radius:8px;
-    border:1px solid #003366;
-    background:#fffefb;
-    font-size:14px;
-    resize: vertical;
-}
-
-/* Buttons */
-.modal-actions {
-    display:flex;
-    justify-content:flex-end;
-    gap:10px;
-    padding: 14px 16px;
-    border-top: 1px solid #e0e6f0;
-    background: #f5f7fb;
-}
-.modal-btn {
-    padding: 8px 14px;
-    border-radius: 8px;
-    font-weight: 600;
-    border: 2px solid #003366;
-    cursor: pointer;
-    font-family: 'Poppins', sans-serif;
-    transition: all 0.2s;
-}
-.modal-btn.save {
-    background: #FFD700;
-    color: #003366;
-}
-.modal-btn.save:hover {
-    background: #e6c200;
-}
-.modal-btn.cancel {
-    background: #ddd;
-    border-color: #999;
-    color: #333;
-}
-.modal-btn.cancel:hover {
-    background: #ccc;
-}
-
-/* Fade in animation */
-@keyframes fadeIn {
-    from {opacity: 0; transform: translate(-50%, -45%);}
-    to {opacity: 1; transform: translate(-50%, -50%);}
-}
-</style>
-
 <script>
-    function openDetails(date,hour){
-    fetch('get_slot_details.php?date='+encodeURIComponent(date)+'&hour='+encodeURIComponent(hour))
-    .then(r=>r.text())
-    .then(html=>{
-        const div=document.createElement('div');
-        div.id="detailsModal";
-        div.innerHTML=html;
-        document.body.appendChild(div);
-    })
-    .catch(err=>alert("Failed to load details: "+err));
-}
-
 function openReservationForm(date,hour){
     document.getElementById('resDate').value=date;
     document.getElementById('resHour').value=hour;
