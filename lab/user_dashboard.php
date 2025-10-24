@@ -131,7 +131,11 @@ th, td {
   border-radius:8px;
   font-size:12px;
   font-weight:600;
+  overflow: hidden;          /* hide overflowing content */
+  text-overflow: ellipsis;   /* show "..." if too long */
+  white-space: nowrap;       /* prevent wrapping to next line */
 }
+
 th {
   background:#003366;
   color:#fff;
@@ -140,16 +144,19 @@ th {
   z-index:2;
   font-size:13px;
 }
+
 td {
   background:#f9fbff;
   border:1px solid #e0e6f0;
   height:60px;
   color:#222;
 }
+
 td.empty:hover {
   background:#e6f0ff;
   cursor:pointer;
 }
+
 
 /* Reservation statuses */
 td.filled { 
@@ -226,16 +233,38 @@ td.past {
             <button class="control-btn" onclick="document.getElementById('reservationSection').scrollIntoView({behavior:'smooth'})">My Reservations</button>
             <button class="control-btn" onclick="location.href='user_info.php'">Sign Out</button>
         </div>
+
+
+<div style="
+  background:#0059b3;
+  color:white;
+  padding:10px 14px;
+  border-radius:8px;
+  margin-top:20px;
+  text-align:center;
+  font-family:'Poppins', sans-serif;
+  font-size:14px;
+">
+  <strong>Schedule Color Legend:</strong>
+  <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin-top:8px;">
+    <div style="background:#3399ff; color:#fff; padding:6px 10px; border-radius:6px;">Admins Schedule</div>
+    <div style="background:#ffeb3b; color:#222; padding:6px 10px; border-radius:6px;">Pending </div>
+    <div style="background:#4caf50; color:#fff; padding:6px 10px; border-radius:6px;">Approved </div>
+    <div style="background:#f44336; color:#fff; padding:6px 10px; border-radius:6px;">Denied </div>
+    <div style="background:#607d8b; color:#fff; padding:6px 10px; border-radius:6px;">Past Time </div>
+  </div>
+</div>
+
     </section>
 
-    <!-- Weekly Schedule Table -->
-    <section class="schedule-wrap">
-        <h2 
-  style="background: #0059b3; border:none; font-family:'Poppins', sans-serif; font-size:20px; color:white; padding:8px 14px; border-radius:8px; cursor:pointer; margin:14px 0; text-align:center; font-weight:500; transition: background 0.2s;"
-  onmouseover="this.style.background='#004080';"
-  onmouseout="this.style.background='#0059b3';">
-  Current Week Schedule
-</h2>
+   <!-- Weekly Schedule Table -->
+<section class="schedule-wrap">
+    <h2 
+        style="background: #0059b3; border:none; font-family:'Poppins', sans-serif; font-size:20px; color:white; padding:8px 14px; border-radius:8px; cursor:pointer; margin:14px 0; text-align:center; font-weight:500; transition: background 0.2s;"
+        onmouseover="this.style.background='#004080';"
+        onmouseout="this.style.background='#0059b3';">
+        Current Week Schedule
+    </h2>
 
     <table>
     <thead>
@@ -245,77 +274,90 @@ td.past {
         </tr>
     </thead>
     <tbody>
-        <?php foreach ($hours as $hour): ?>
-        <tr>
-            <th><?php echo date("h A", strtotime("$hour:00")); ?></th>
-            <?php foreach ($weeks as $date => $dt): ?>
-            <?php
-                $slotTime = new DateTime($date . " $hour:00");
-                $now = new DateTime();
-                $isPast = $slotTime < $now;
+    <?php foreach ($hours as $hour): ?>
+    <tr>
+        <th><?php echo date("h A", strtotime("$hour:00")); ?></th>
+        <?php foreach ($weeks as $date => $dt): ?>
+        <?php
+            $slotTime = new DateTime($date . " $hour:00");
+            $now = new DateTime();
+            $isPast = $slotTime < $now;
 
-                $text = "";
-                $finalClass = "empty";
+            $text = "";
+            $finalClass = "empty";
 
-                // check user activities
-                foreach($activities as $act){
-                    if($act['day_date']==$date && (int)$act['hour']==(int)$hour){
-                        $text = htmlspecialchars($user['name']) . " | " . htmlspecialchars($act['status']);
-                        $finalClass = strtolower($act['status']);
-                        if($isPast) $finalClass = "past";
-                        break;
-                    }
+            // check user activities
+            foreach($activities as $act){
+                if($act['day_date']==$date && (int)$act['hour']==(int)$hour){
+                    $text = htmlspecialchars($user['name']) . " | " . htmlspecialchars($act['status']);
+                    $finalClass = strtolower($act['status']);
+                    if($isPast) $finalClass = "past";
+                    break;
                 }
+            }
 
-               // check admin grid
-if (empty($text) && isset($grid[$date][$hour])) {
-    $s = $grid[$date][$hour];
-    $text = htmlspecialchars($s['year_section']); // ✅ replaced 3 fields with one
-    $finalClass = $isPast ? "past" : "filled";
-}
+            // check admin grid
+            if (empty($text) && isset($grid[$date][$hour])) {
+                $s = $grid[$date][$hour];
+                $text = htmlspecialchars($s['section']);
+                $finalClass = $isPast ? "past" : "filled";
+            }
 
-                // FIX: mark past empty slots as past
-                if(empty($text) && $isPast){
-                    $finalClass = "past";
+            if(empty($text) && $isPast){
+                $finalClass = "past";
+            }
+
+            $safeDate = htmlspecialchars($date);
+            $safeHour = htmlspecialchars($hour);
+        ?>
+        <td class="<?php echo $finalClass; ?>"
+            <?php 
+                if(!$isPast && ($finalClass=="pending" || $finalClass=="approved")) {
+                    echo "onclick=\"openDetailsModal('$safeDate','$safeHour')\" style='cursor:pointer;'";
+                } elseif(!$isPast && $finalClass=="empty") {
+                    echo "onclick=\"openReservationForm('$safeDate','$safeHour')\" style='cursor:pointer;'";
+                } elseif(!$isPast && $finalClass=="filled") {
+                    echo "onclick=\"openAdminScheduleModal('$safeDate','$safeHour')\" style='cursor:pointer;'";
                 }
             ?>
-            <td class="<?php echo $finalClass; ?>"
-                <?php if(!$isPast && $finalClass=="empty") echo "onclick=\"openReservationForm('$date','$hour')\""; ?>
-                title="<?php echo $finalClass==='past' ? 'This slot is in the past.' : ($finalClass==='filled' ? 'Already scheduled by admin.' : 'Click to reserve.'); ?>">
-                <?php echo $text; ?>
-            </td>
-            <?php endforeach; ?>
-        </tr>
+            title="<?php 
+                if($finalClass==='past') echo 'This slot is in the past.'; 
+                elseif($finalClass==='filled') echo 'Already scheduled by admin.'; 
+                else echo 'Click to reserve.'; 
+            ?>">
+            <?php echo $text; ?>
+        </td>
         <?php endforeach; ?>
-    </tbody>
+    </tr>
+    <?php endforeach; ?>
+</tbody>
+
 </table>
+</section>
 
-    </section>
-
-    <!-- User Reservations -->
-    <section class="reservations" id="reservationSection">
-        <h2 style="font-family:'Merriweather', serif; color:#003366; margin-top:22px;">My Reservations</h2>
-        <table>
-            <thead><tr><th>Date</th><th>Hour</th><th>Type</th><th>Reason</th><th>Status</th></tr></thead>
-            <tbody>
-            <?php if(empty($activities)): ?>
-                <tr><td colspan="5" style="padding:14px;text-align:center;">No reservations yet</td></tr>
-            <?php else: foreach($activities as $act):
-                $slotTime = new DateTime($act['day_date'].' '.str_pad($act['hour'],2,'0',STR_PAD_LEFT).':00:00');
-                $displayStatus = $slotTime<new DateTime()?'Past':$act['status'];
-            ?>
-                <tr>
-                    <td><?php echo htmlspecialchars($act['day_date']); ?></td>
-                    <td><?php echo date("g A", strtotime($act['hour'].":00")); ?></td>
-                    <td><?php echo htmlspecialchars($act['reservation_type']); ?></td>
-                    <td><?php echo htmlspecialchars($act['reason']); ?></td>
-                    <td><?php echo htmlspecialchars($displayStatus); ?></td>
-                </tr>
-            <?php endforeach; endif; ?>
-            </tbody>
-        </table>
-    </section>
-</main>
+<!-- User Reservations -->
+<section class="reservations" id="reservationSection">
+    <h2 style="font-family:'Merriweather', serif; color:#003366; margin-top:22px;">My Reservations</h2>
+    <table>
+        <thead><tr><th>Date</th><th>Hour</th><th>Type</th><th>Reason</th><th>Status</th></tr></thead>
+        <tbody>
+        <?php if(empty($activities)): ?>
+            <tr><td colspan="5" style="padding:14px;text-align:center;">No reservations yet</td></tr>
+        <?php else: foreach($activities as $act):
+            $slotTime = new DateTime($act['day_date'].' '.str_pad($act['hour'],2,'0',STR_PAD_LEFT).':00:00');
+            $displayStatus = $slotTime<new DateTime()?'Past':$act['status'];
+        ?>
+            <tr>
+                <td><?php echo htmlspecialchars($act['day_date']); ?></td>
+                <td><?php echo date("g A", strtotime($act['hour'].":00")); ?></td>
+                <td><?php echo htmlspecialchars($act['reservation_type']); ?></td>
+                <td><?php echo htmlspecialchars($act['reason']); ?></td>
+                <td><?php echo htmlspecialchars($displayStatus); ?></td>
+            </tr>
+        <?php endforeach; endif; ?>
+        </tbody>
+    </table>
+</section>
 
 <!-- Reservation Modal -->
 <div id="reservationForm">
@@ -337,36 +379,201 @@ if (empty($text) && isset($grid[$date][$hour])) {
     </div>
 </div>
 <div id="modalBackdrop" onclick="closeReservationForm()"></div>
+<!-- Admin Schedule Modal (Mobile Responsive) -->
+<div id="adminScheduleModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    z-index:10002; width:90%; max-width:500px; background:#fffdf6; border:3px solid #003366; border-radius:14px; padding:14px; box-shadow:0 30px 80px rgba(0,0,0,0.4);">
+    <h3 style="text-align:center; color:#003366;">Admin Schedule Details</h3>
+    <div style="overflow-x:auto; margin-top:10px;">
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+            <thead>
+                <tr style="background:#003366; color:#fff; text-align:center;">
+                    <th>Section</th>
+                    <th>Subject</th>
+                    <th>Instructor</th>
+                    <th>Room</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody id="adminScheduleBody"></tbody>
+        </table>
+    </div>
+    <div style="text-align:center; margin-top:12px;">
+        <button onclick="closeAdminScheduleModal()" style="padding:8px 12px; border-radius:8px; border:2px solid #003366; background:#ffcc00; color:#003366; cursor:pointer;">Close</button>
+    </div>
+</div>
+<div id="adminScheduleBackdrop" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
+    background:rgba(0,0,0,0.5); z-index:10001;" onclick="closeAdminScheduleModal()"></div>
 
 <script>
-function openReservationForm(date,hour){
-    document.getElementById('resDate').value=date;
-    document.getElementById('resHour').value=hour;
-    document.getElementById('reservationForm').style.display='block';
-    document.getElementById('modalBackdrop').style.display='block';
+document.addEventListener('DOMContentLoaded', function() {
+
+  function openAdminScheduleModal(date, hour) {
+    fetch(`get_admin_schedule.php?date=${encodeURIComponent(date)}&hour=${encodeURIComponent(hour)}`)
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                alert(data.message);
+                return;
+            }
+
+            const schedules = data.adminSchedules || []; // <- safe fallback
+            const tbody = document.getElementById('adminScheduleBody');
+            tbody.innerHTML = '';
+
+            if (schedules.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;">No schedule found</td></tr>';
+                return;
+            }
+
+            schedules.forEach(s => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${s.day_date}</td><td>${s.section}</td>`;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('adminScheduleModal').style.display = 'block';
+            document.getElementById('adminScheduleBackdrop').style.display = 'block';
+        })
+        .catch(err => alert('Error fetching admin schedule: ' + err));
 }
-function closeReservationForm(){
-    document.getElementById('reservationForm').style.display='none';
-    document.getElementById('modalBackdrop').style.display='none';
-}
-function submitReservation(){
-    const date=document.getElementById('resDate').value;
-    const hour=document.getElementById('resHour').value;
-    const type=document.getElementById('resType').value;
-    const reason=document.getElementById('resReason').value;
-    if(!date||!hour||!type||!reason){ alert('Fill all fields'); return; }
-    fetch('save_reservation.php',{
-        method:'POST',
-        headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body:`date=${encodeURIComponent(date)}&hour=${encodeURIComponent(hour)}&reservation_type=${encodeURIComponent(type)}&reason=${encodeURIComponent(reason)}`
-    })
-    .then(r=>r.json())
-    .then(data=>{
-        if(data.success){ alert('Reservation saved!'); location.reload(); }
-        else alert('Error: '+data.message);
-    }).catch(err=>alert('Request failed: '+err));
-}
-document.addEventListener('keydown', e=>{ if(e.key==="Escape") closeReservationForm(); });
+
+
+    function closeAdminScheduleModal() {
+        const modal = document.getElementById('adminScheduleModal');
+        const backdrop = document.getElementById('adminScheduleBackdrop');
+        if(modal) modal.style.display = 'none';
+        if(backdrop) backdrop.style.display = 'none';
+    }
+
+    window.openAdminScheduleModal = openAdminScheduleModal;
+    window.closeAdminScheduleModal = closeAdminScheduleModal;
+
+    document.addEventListener('keydown', e => {
+        if(e.key === "Escape") closeAdminScheduleModal();
+    });
+
+});
 </script>
+
+<style>
+@media (max-width: 600px) {
+    #adminScheduleModal table { font-size:11px; }
+    #adminScheduleModal table th, #adminScheduleModal table td { padding:4px; }
+}
+</style>
+
+
+<!-- Details Modal (Mobile Responsive) -->
+<div id="detailsModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    z-index:10001; width:90%; max-width:500px; background:#fffdf6; border:3px solid #003366; border-radius:14px; padding:14px; box-shadow:0 30px 80px rgba(0,0,0,0.4);">
+    <h3 style="text-align:center; color:#003366;">Slot Reservation Details</h3>
+    <div style="overflow-x:auto; margin-top:10px;">
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+            <thead>
+                <tr style="background:#003366; color:#fff; text-align:center;">
+                    <th>Name</th>
+                    <th>Section</th>
+                    <th>Classification</th>
+                    <th>Type</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="detailsBody"></tbody>
+        </table>
+    </div>
+    <div style="text-align:center; margin-top:12px;">
+        <button onclick="closeDetailsModal()" style="padding:8px 12px; border-radius:8px; border:2px solid #003366; background:#ffcc00; color:#003366; cursor:pointer;">Close</button>
+    </div>
+</div>
+<div id="detailsBackdrop" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
+    background:rgba(0,0,0,0.5); z-index:10000;" onclick="closeDetailsModal()"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // Open reservation details modal
+    function openDetailsModal(date, hour) {
+        if (!date || !hour) { alert('Error: Missing date or hour'); return; }
+        fetch(`get_slot_reservations.php?date=${encodeURIComponent(date)}&hour=${encodeURIComponent(hour)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) { alert(data.message); return; }
+                const tbody = document.getElementById('detailsBody');
+                tbody.innerHTML = '';
+                data.reservations.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${r.name}</td><td>${r.section}</td><td>${r.classification}</td><td>${r.reservation_type}</td><td>${r.reason}</td><td>${r.status}</td>`;
+                    tbody.appendChild(tr);
+                });
+                document.getElementById('detailsModal').style.display = 'block';
+                document.getElementById('detailsBackdrop').style.display = 'block';
+            })
+            .catch(err => alert('Error fetching reservation details: ' + err));
+    }
+
+    // Close details modal
+    function closeDetailsModal() {
+        const modal = document.getElementById('detailsModal');
+        const backdrop = document.getElementById('detailsBackdrop');
+        if(modal) modal.style.display = 'none';
+        if(backdrop) backdrop.style.display = 'none';
+    }
+
+    // Open reservation form modal
+    function openReservationForm(date,hour){
+        document.getElementById('resDate').value=date;
+        document.getElementById('resHour').value=hour;
+        document.getElementById('reservationForm').style.display='block';
+        document.getElementById('modalBackdrop').style.display='block';
+    }
+
+    function closeReservationForm(){
+        document.getElementById('reservationForm').style.display='none';
+        document.getElementById('modalBackdrop').style.display='none';
+    }
+
+    function submitReservation(){
+        const date=document.getElementById('resDate').value;
+        const hour=document.getElementById('resHour').value;
+        const type=document.getElementById('resType').value;
+        const reason=document.getElementById('resReason').value;
+        if(!date||!hour||!type||!reason){ alert('Fill all fields'); return; }
+        fetch('save_reservation.php',{
+            method:'POST',
+            headers:{'Content-Type':'application/x-www-form-urlencoded'},
+            body:`date=${encodeURIComponent(date)}&hour=${encodeURIComponent(hour)}&reservation_type=${encodeURIComponent(type)}&reason=${encodeURIComponent(reason)}`
+        })
+        .then(r=>r.json())
+        .then(data=>{
+            if(data.success){ alert('Reservation saved!'); location.reload(); }
+            else alert('Error: '+data.message);
+        }).catch(err=>alert('Request failed: '+err));
+    }
+
+    // Assign functions to global scope so HTML onclick can use them
+    window.openDetailsModal = openDetailsModal;
+    window.closeDetailsModal = closeDetailsModal;
+    window.openReservationForm = openReservationForm;
+    window.closeReservationForm = closeReservationForm;
+    window.submitReservation = submitReservation;
+
+    // Close modals on Escape
+    document.addEventListener('keydown', e=>{
+        if(e.key==="Escape") { 
+            closeReservationForm(); 
+            closeDetailsModal(); 
+        }
+    });
+
+});
+</script>
+
+<style>
+@media (max-width: 600px) {
+    #detailsModal table { font-size:11px; }
+    #detailsModal table th, #detailsModal table td { padding:4px; }
+}
+</style>
 </body>
 </html>

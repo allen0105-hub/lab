@@ -65,7 +65,7 @@ foreach ($weekDates as $dateStr => $_) {
 foreach ($adminSchedules as $s) {
     if (isset($grid[$s['day_date']][$s['hour']])) {
         $grid[$s['day_date']][$s['hour']]['admin_schedule'] = [
-            'year_section' => $s['year_section'] ?? ''
+            'section' => $s['section'] ?? ''
         ];
     }
 }
@@ -265,7 +265,7 @@ foreach ($reservationsRaw as $r) {
                 if ($isPast) $classes[] = 'past';
                 $clickable = false;
                 $ad = $slot['admin_schedule'];
-                $contentHtml = htmlspecialchars($ad['year_section']);
+                $contentHtml = htmlspecialchars($ad['section']);
             } elseif ($isPast) {
                 $classes[] = 'past';
             } elseif ($resCount > 0) {

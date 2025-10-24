@@ -335,15 +335,15 @@ td.past {
                     <?php
                         $slotTime = new DateTime($dt->format('Y-m-d') . ' ' . str_pad($hour, 2, '0', STR_PAD_LEFT) . ':00:00');
                         $isPast = $slotTime < new DateTime();
+if (isset($grid[$date][$hour])) {
+    $s = $grid[$date][$hour];
+    $text = htmlspecialchars($s['section']); // Only show section
+    $class = $isPast ? "past" : "filled";
+} else {
+    $text = "";
+    $class = $isPast ? "past" : "empty";
+}
 
-                        if (isset($grid[$date][$hour])) {
-                            $s = $grid[$date][$hour];
-                            $text = htmlspecialchars($s['department']) . " | " . htmlspecialchars($s['year_level']) . " | " . htmlspecialchars($s['section']);
-                            $class = $isPast ? "past" : "filled"; // <-- FIXED
-                        } else {
-                            $text = "";
-                            $class = $isPast ? "past" : "empty";
-                        }
                     ?>
                     <td class="<?php echo $class; ?>" <?php echo $isPast ? "" : "onclick=\"cellClicked('{$date}',{$hour})\""; ?>>
                         <div class="schedule-info"><?php echo $text; ?></div>
@@ -397,7 +397,7 @@ function saveSchedule() {
   fetch('save_schedule.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `date=${encodeURIComponent(date)}&hour=${encodeURIComponent(hour)}&year_section=${encodeURIComponent(yearSection)}`
+    body: `date=${encodeURIComponent(date)}&hour=${encodeURIComponent(hour)}&section=${encodeURIComponent(yearSection)}`
   })
   .then(res => res.json())
   .then(data => {
