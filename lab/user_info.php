@@ -141,8 +141,6 @@ button:hover { background:#002244; transform: scale(1.05); }
     <div class="form-group">
       <label>Classification:</label>
       <select name="classification" required>
-        <option value="">Select Classification</option>
-        <option value="Faculty">Faculty</option>
         <option value="Student">Student</option>
         <option value="Teacher">Teacher</option>
       </select>

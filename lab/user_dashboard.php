@@ -117,71 +117,87 @@ body {
 }   
 /* Table styles */
 /* Table */
-.schedule-wrap { margin-top:10px; width:100%; }
+.schedule-wrap { 
+  margin-top: 10px; 
+  width: 100%; 
+}
+
 table {
   border-collapse: separate;
-  border-spacing:4px;
-  width:100%;
+  border-spacing: 4px;
+  width: 100%;
   table-layout: fixed;
 }
+
 th, td {
-  padding:8px;
-  text-align:center;
-  vertical-align:middle;
-  border-radius:8px;
-  font-size:12px;
-  font-weight:600;
-  overflow: hidden;          /* hide overflowing content */
-  text-overflow: ellipsis;   /* show "..." if too long */
-  white-space: nowrap;       /* prevent wrapping to next line */
+  padding: 6px;
+  text-align: center;
+  vertical-align: middle;
+  border-radius: 6px;
+  font-size: 10px;              /* smallest readable font */
+  font-weight: 600;
+  overflow: hidden;             
+  text-overflow: ellipsis;      
+  white-space: nowrap;          
 }
 
 th {
-  background:#003366;
-  color:#fff;
-  position:sticky;
-  top:0;
-  z-index:2;
-  font-size:13px;
+  background: #003366;
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-size: 11px;              /* slightly larger for header */
+  letter-spacing: 0.3px;
 }
 
 td {
-  background:#f9fbff;
-  border:1px solid #e0e6f0;
-  height:60px;
-  color:#222;
+  background: #f9fbff;
+  border: 1px solid #e0e6f0;
+  height: 52px;
+  color: #222;
+  transition: background 0.2s;
 }
 
 td.empty:hover {
-  background:#e6f0ff;
-  cursor:pointer;
+  background: #e6f0ff;
+  cursor: pointer;
 }
-
 
 /* Reservation statuses */
 td.filled { 
-  background:#3399ff; /* blue */
-  color:#fff; 
+  background: #3399ff;
+  color: #fff; 
 }
 td.pending { 
-  background:#ffeb3b; /* yellow */
-  color:#222; 
+  background: #ffeb3b;
+  color: #222; 
 }
 td.approved { 
-  background:#4caf50; /* green */
-  color:#fff; 
+  background: #4caf50;
+  color: #fff; 
 }
 td.denied { 
-  background:#f44336; /* red */
-  color:#fff; 
+  background: #f44336;
+  color: #fff; 
 }
 td.past {
-  background: #607d8b;   /* black */
-  color:#fff;
-  cursor:not-allowed; 
-  pointer-events:none;
+  background: #607d8b;
+  color: #fff;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
+/* Responsive: ensure text still fits in small screens */
+@media (max-width: 480px) {
+  th, td {
+    font-size: 9px;     /* tiniest font for mobile */
+    padding: 4px;
+  }
+  td {
+    height: 45px;
+  }
+}
 
 /* Modal */
 #reservationForm { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:10000; width:90%; max-width:380px; background: linear-gradient(180deg,#fffdf6,#fff3dc); border:3px solid #003366; border-radius:14px; padding:14px; box-shadow:0 30px 80px rgba(0,0,0,0.4); }
@@ -229,8 +245,7 @@ td.past {
         </div>
 
         <div>
-            <button class="control-btn" onclick="location.href='user_info.php'">Edit Info</button>
-            <button class="control-btn" onclick="document.getElementById('reservationSection').scrollIntoView({behavior:'smooth'})">My Reservations</button>
+             <button class="control-btn" onclick="location.href='my_reservations.php'">My Reservations</button>
             <button class="control-btn" onclick="location.href='user_info.php'">Sign Out</button>
         </div>
 
@@ -335,30 +350,6 @@ td.past {
 </table>
 </section>
 
-<!-- User Reservations -->
-<section class="reservations" id="reservationSection">
-    <h2 style="font-family:'Merriweather', serif; color:#003366; margin-top:22px;">My Reservations</h2>
-    <table>
-        <thead><tr><th>Date</th><th>Hour</th><th>Type</th><th>Reason</th><th>Status</th></tr></thead>
-        <tbody>
-        <?php if(empty($activities)): ?>
-            <tr><td colspan="5" style="padding:14px;text-align:center;">No reservations yet</td></tr>
-        <?php else: foreach($activities as $act):
-            $slotTime = new DateTime($act['day_date'].' '.str_pad($act['hour'],2,'0',STR_PAD_LEFT).':00:00');
-            $displayStatus = $slotTime<new DateTime()?'Past':$act['status'];
-        ?>
-            <tr>
-                <td><?php echo htmlspecialchars($act['day_date']); ?></td>
-                <td><?php echo date("g A", strtotime($act['hour'].":00")); ?></td>
-                <td><?php echo htmlspecialchars($act['reservation_type']); ?></td>
-                <td><?php echo htmlspecialchars($act['reason']); ?></td>
-                <td><?php echo htmlspecialchars($displayStatus); ?></td>
-            </tr>
-        <?php endforeach; endif; ?>
-        </tbody>
-    </table>
-</section>
-
 <!-- Reservation Modal -->
 <div id="reservationForm">
     <h3>Make Reservation</h3>
@@ -383,15 +374,18 @@ td.past {
 <div id="adminScheduleModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
     z-index:10002; width:90%; max-width:500px; background:#fffdf6; border:3px solid #003366; border-radius:14px; padding:14px; box-shadow:0 30px 80px rgba(0,0,0,0.4);">
     <h3 style="text-align:center; color:#003366;">Admin Schedule Details</h3>
+
+    <!-- Info Time Display -->
+    <div id="infoTimeContainer" style="text-align:center; margin-top:6px; font-size:14px; color:#003366; font-weight:bold;">
+        Time: <span id="infoTimeValue">--:--</span>
+    </div>
+
     <div style="overflow-x:auto; margin-top:10px;">
         <table style="width:100%; border-collapse:collapse; font-size:13px;">
             <thead>
                 <tr style="background:#003366; color:#fff; text-align:center;">
-                    <th>Section</th>
-                    <th>Subject</th>
-                    <th>Instructor</th>
-                    <th>Room</th>
-                    <th>Time</th>
+                    <th>Date</th>
+                    <th>Year and Section</th>
                 </tr>
             </thead>
             <tbody id="adminScheduleBody"></tbody>
@@ -408,6 +402,9 @@ td.past {
 document.addEventListener('DOMContentLoaded', function() {
 
   function openAdminScheduleModal(date, hour) {
+    // Display selected time in modal
+    document.getElementById('infoTimeValue').textContent = hour ? `${hour}:00` : '--:--';
+
     fetch(`get_admin_schedule.php?date=${encodeURIComponent(date)}&hour=${encodeURIComponent(hour)}`)
         .then(res => res.json())
         .then(data => {
@@ -416,7 +413,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            const schedules = data.adminSchedules || []; // <- safe fallback
+            const schedules = data.adminSchedules || [];
             const tbody = document.getElementById('adminScheduleBody');
             tbody.innerHTML = '';
 
@@ -435,25 +432,23 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('adminScheduleBackdrop').style.display = 'block';
         })
         .catch(err => alert('Error fetching admin schedule: ' + err));
-}
+  }
 
+  function closeAdminScheduleModal() {
+      document.getElementById('adminScheduleModal').style.display = 'none';
+      document.getElementById('adminScheduleBackdrop').style.display = 'none';
+  }
 
-    function closeAdminScheduleModal() {
-        const modal = document.getElementById('adminScheduleModal');
-        const backdrop = document.getElementById('adminScheduleBackdrop');
-        if(modal) modal.style.display = 'none';
-        if(backdrop) backdrop.style.display = 'none';
-    }
+  window.openAdminScheduleModal = openAdminScheduleModal;
+  window.closeAdminScheduleModal = closeAdminScheduleModal;
 
-    window.openAdminScheduleModal = openAdminScheduleModal;
-    window.closeAdminScheduleModal = closeAdminScheduleModal;
-
-    document.addEventListener('keydown', e => {
-        if(e.key === "Escape") closeAdminScheduleModal();
-    });
+  document.addEventListener('keydown', e => {
+      if(e.key === "Escape") closeAdminScheduleModal();
+  });
 
 });
 </script>
+
 
 <style>
 @media (max-width: 600px) {

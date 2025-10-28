@@ -294,206 +294,204 @@ foreach ($reservationsRaw as $r) {
     </table>
   </div>
 </main>
-  <!-- Reservation Modal with Overlay -->
-  <style>
-  /* ================= OVERLAY ================= */
-  #reservationOverlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0, 51, 102, 0.7); /* TCC blue overlay */
-    z-index: 1000;
-    display: none;             
-    justify-content: center;   
-    align-items: center;       
-    padding: 10px;
-  }
+<style>
+/* ================= OVERLAY ================= */
+#reservationOverlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0, 31, 63, 0.75); /* deep TCC blue overlay */
+  z-index: 1000;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  padding: 12px;
+  backdrop-filter: blur(4px);
+}
 
-  /* ================= MODAL BOX ================= */
+/* ================= MODAL BOX ================= */
+#reservationForm {
+  background: linear-gradient(180deg, #fff8cc, #ffe680);
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 18px;
+  padding: 26px;
+  position: relative;
+  box-shadow: 0 0 30px rgba(0, 31, 63, 0.6);
+  border: 3px solid #003366;
+  font-family: 'Poppins', sans-serif;
+  color: #00264d;
+  animation: fadeInScale 0.3s ease-in-out;
+}
+
+/* ================= ANIMATION ================= */
+@keyframes fadeInScale {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* ================= CLOSE BUTTON ================= */
+#reservationForm .modal-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #cc9900;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+#reservationForm .modal-close:hover {
+  transform: scale(1.2);
+  color: #ffcc00;
+}
+
+/* ================= HEADING ================= */
+#reservationForm h3 {
+  margin-top: 0;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #00264d;
+  text-shadow: 1px 1px 3px #ffcc00;
+  letter-spacing: 0.5px;
+}
+
+/* ================= FORM ELEMENTS ================= */
+#reservationForm label {
+  display: block;
+  margin-top: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #00264d;
+}
+
+#reservationForm input,
+#reservationForm select,
+#reservationForm textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #003366;
+  background: #fffdf2;
+  font-size: 14px;
+  color: #00264d;
+  transition: box-shadow 0.2s, border 0.2s;
+}
+
+#reservationForm input:focus,
+#reservationForm select:focus,
+#reservationForm textarea:focus {
+  outline: none;
+  border-color: #ffcc00;
+  box-shadow: 0 0 6px #ffcc00;
+}
+
+/* ================= BUTTONS ================= */
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 18px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.modal-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: 2px solid #003366;
+  background: linear-gradient(180deg, #ffcc00, #ffb300);
+  color: #00264d;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.15s;
+  font-size: 14px;
+}
+
+.modal-btn:hover {
+  background: #00264d;
+  color: #ffcc00;
+  transform: scale(1.02);
+}
+
+.modal-btn.cancel {
+  background: #ccc;
+  border-color: #999;
+  color: #222;
+}
+.modal-btn.cancel:hover {
+  background: #999;
+  color: #fff;
+}
+
+/* ================= FULLY BOOKED MESSAGE ================= */
+#fullyBookedMessage {
+  display: none;
+  color: #cc0000;
+  font-weight: 700;
+  text-align: center;
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+/* ================= NAVIGATION BUTTONS ================= */
+#navButtons {
+  display: none;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+#navButtons button {
+  padding: 6px 10px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 2px solid #003366;
+  background: #ffcc00;
+  color: #00264d;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#navButtons button:hover {
+  background: #00264d;
+  color: #ffcc00;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 600px) {
   #reservationForm {
-    background: linear-gradient(180deg, #fff4c2, #ffe27a); /* TCC yellow gradient */
-    width: 100%;
-    max-width: 420px;
-    max-height: 90vh;
-    overflow-y: auto;
-    border-radius: 16px;
-    padding: 22px;
-    position: relative;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    border: 3px solid #003366; /* TCC dark blue border */
-    font-family: 'Pirata One', cursive; /* TCC themed font */
-    color: #003366;
+    width: 90%;
+    max-width: 320px;
+    padding: 16px;
+    border-radius: 14px;
   }
 
-  /* ================= CLOSE BUTTON ================= */
-  #reservationForm .modal-close {
-    position: absolute;
-    top: 8px;
-    right: 12px;
-    background: none;
-    border: none;
-    font-size: 26px;
-    cursor: pointer;
-    color: #cc9900; /* TCC gold */
-  }
-
-  /* ================= HEADING ================= */
   #reservationForm h3 {
-    margin-top: 0;
-    text-align: center;
-    font-size: 22px;
-    color: #003366;
-    text-shadow: 1px 1px 2px #cc9900;
+    font-size: 18px;
   }
 
-  /* ================= FORM ELEMENTS ================= */
   #reservationForm label {
-    display: block;
-    margin-top: 10px;
-    font-weight: bold;
-    font-size: 14px;
-    color: #003366;
+    font-size: 12px;
   }
 
   #reservationForm input,
   #reservationForm select,
   #reservationForm textarea {
-    width: 100%;
-    padding: 8px;
-    border-radius: 8px;
-    border: 1px solid #003366;
-    background: #fff9e6; /* light TCC cream */
-    box-sizing: border-box;
-    font-size: 14px;
-    color: #003366;
-    font-family: 'Arial', sans-serif;
-  }
-
-  /* ================= ACTION BUTTONS ================= */
-  #reservationForm .modal-actions {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 15px;
-    gap: 10px;
-    flex-wrap: wrap;
+    font-size: 12px;
+    padding: 6px;
   }
 
   .modal-btn {
-    flex: 1;
-    padding: 10px;
-    border-radius: 8px;
-    border: 2px solid #003366;
-    background: #ffcc00; /* TCC gold */
-    color: #003366;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s;
-    font-size: 14px;
+    font-size: 12px;
+    padding: 8px;
   }
-
-  .modal-btn:hover {
-    background: #003366;
-    color: #ffcc00;
-  }
-
-  .modal-btn.cancel {
-    background: #ccc;
-    border-color: #999;
-    color: #222;
-  }
-
-  /* ================= FULLY BOOKED MESSAGE ================= */
-  #fullyBookedMessage {
-    display: none;
-    color: #cc0000; /* TCC warning red */
-    font-weight: 700;
-    text-align: center;
-    margin-top: 10px;
-    font-size: 14px;
-  }
-
-  /* ================= NAVIGATION BUTTONS ================= */
-  #navButtons {
-    display: none;
-    gap: 8px;
-    justify-content: center;
-    margin-top: 10px;
-  }
-
-  #navButtons button {
-    padding: 6px 10px;
-    font-size: 14px;
-    border-radius: 6px;
-    border: 2px solid #003366;
-    background: #ffcc00;
-    color: #003366;
-    cursor: pointer;
-  }
-
-  #navButtons button:hover {
-    background: #003366;
-    color: #ffcc00;
-  }
-
-  /* ================= MOBILE RESPONSIVE ================= */
-  @media (max-width: 600px) {
-    #reservationOverlay {
-      padding: 0;
-      justify-content: center;
-      align-items: center;
-    }
-
-    #reservationForm {
-      width: 90%;
-      max-width: 320px;
-      padding: 14px;
-      border-radius: 12px;
-    }
-
-    #reservationForm h3 {
-      font-size: 18px;
-    }
-
-    #reservationForm label {
-      font-size: 12px;
-    }
-
-    #reservationForm input,
-    #reservationForm select,
-    #reservationForm textarea {
-      font-size: 12px;
-      padding: 6px;
-    }
-
-    .modal-btn {
-      font-size: 12px;
-      padding: 6px;
-    }
-  }
-
-  @media (max-width: 400px) {
-    #reservationForm {
-      width: 85%;
-      max-width: 280px;
-      padding: 10px;
-    }
-
-    #reservationForm h3 {
-      font-size: 16px;
-    }
-
-    .modal-actions {
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .modal-btn {
-      width: 100%;
-      font-size: 12px;
-      padding: 6px;
-    }
-  }
-  </style>
+}
+</style>
 
 <div id="reservationOverlay">
   <div id="reservationForm" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
@@ -541,6 +539,7 @@ foreach ($reservationsRaw as $r) {
     </div>
   </div>
 </div>
+
 
 <script>
 (function() {
