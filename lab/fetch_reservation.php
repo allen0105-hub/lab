@@ -156,6 +156,13 @@ foreach ($reservationsRaw as $r) {
     display:flex;align-items:center;justify-content:center;
     font-weight:700;color:#002855;font-size:20px;
   }
+/* Admin-scheduled cells */
+.schedule-wrap td.admin-schedule {
+  background: #3399ff;
+  color: #fff;
+  font-weight: 700;
+  border: 1px solid #267acc;
+}
 
   /* schedule table */
   .schedule-wrap { margin-top:6px;width:100%;overflow-x:auto; }
@@ -166,25 +173,52 @@ foreach ($reservationsRaw as $r) {
     word-wrap:break-word; overflow-wrap:break-word; white-space:normal;
     padding:8px; height:60px; font-size:12px;
   }
+  .schedule-wrap td.time-col.active-hour {
+  background:#002855;
+  color:#FFD700;
+  font-weight:700;
+}
+
+    /* highlight time column from 7 AM to 9 PM same as day headers */
+  .schedule-wrap td.time-col {
+    background: #002855;
+    color: #FFD700;
+    font-weight: 700;
+  }
+
+  /* optional: dim hours outside 7 AM–9 PM */
+  .schedule-wrap tr:not(:nth-child(n+1)):not(:nth-child(-n+13)) .time-col {
+    background: #d9d9d9;
+    color: #555;
+  }
+
   .schedule-wrap th {
     background:#002855; color:#FFD700;
     position:sticky;top:0;z-index:3; font-size:13px;
   }
   .schedule-wrap td {
-    background:#ffffff;
+    background:#ffffff; color:#FFD700;
     border:1px solid #ccc;
     color:#002855;
     transition:transform .12s ease, box-shadow .12s ease;
   }
+  td.filled { 
+  background: #3399ff;
+  color: #fff; 
+}
   .schedule-wrap td.reservation.pending { background:#f28b82;color:#fff; }
   .schedule-wrap td.reservation.approved { background:#7bd389;color:#fff; }
-  .schedule-wrap td.past { background:#d9d9d9;color:#555;cursor:not-allowed; }
+  .schedule-wrap td.past { background:#607d8b; /* slightly darker gray */
+  color:#607d8b;
+  cursor:not-allowed;
+}
   .schedule-wrap td.clickable:hover {
     transform:translateY(-3px);
     box-shadow:0 6px 12px rgba(0,0,0,0.18);
     background:#f0f8ff;
     cursor:pointer;
   }
+
     /* Footer */
       footer{
         text-align:center;
@@ -248,7 +282,10 @@ foreach ($reservationsRaw as $r) {
       <tbody>
       <?php foreach ($hours as $hour): ?>
         <tr>
-          <td class="time-col"><strong><?php echo sprintf("%02d:00", $hour); ?></strong></td>
+          <td class="time-col<?php echo ($hour >= 7 && $hour <= 21) ? ' active-hour' : ''; ?>">
+  <strong><?php echo date("g:i A", mktime($hour, 0)); ?></strong>
+</td>
+
           <?php foreach ($weekDates as $date => $dt):
             $slot     = $grid[$date][$hour];
             $now      = new DateTime();

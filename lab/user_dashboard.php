@@ -22,6 +22,21 @@ $grid = [];
 foreach ($schedules as $s) {
     $grid[$s['day_date']][$s['hour']] = $s;
 }
+// Fetch all approved reservations (for everyone)
+$stmt = $pdo->query("
+    SELECT r.day_date, r.hour, u.name, u.section, u.classification, 
+           r.reservation_type, r.reason, r.status
+    FROM reservations r
+    JOIN users u ON r.user_id = u.id
+    WHERE r.status = 'Approved'
+");
+$approvedReservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Organize approved reservations by date and hour
+$approvedGrid = [];
+foreach ($approvedReservations as $r) {
+    $approvedGrid[$r['day_date']][$r['hour']] = $r;
+}
 
 // Current week dates (Mon - Sun)
 $today = new DateTime();
@@ -272,7 +287,7 @@ td.past {
 
     </section>
 
-   <!-- Weekly Schedule Table -->
+ <!-- Weekly Schedule Table -->
 <section class="schedule-wrap">
     <h2 
         style="background: #0059b3; border:none; font-family:'Poppins', sans-serif; font-size:20px; color:white; padding:8px 14px; border-radius:8px; cursor:pointer; margin:14px 0; text-align:center; font-weight:500; transition: background 0.2s;"
@@ -280,6 +295,17 @@ td.past {
         onmouseout="this.style.background='#0059b3';">
         Current Week Schedule
     </h2>
+
+    <?php 
+    // ✅ STEP 2: Fetch approved reservations (visible to all users)
+    $approvedStmt = $pdo->query("
+        SELECT r.day_date, r.hour, u.name, u.section, u.classification, r.reservation_type, r.reason, r.status
+        FROM reservations r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.status = 'Approved'
+    ");
+    $approvedReservations = $approvedStmt->fetchAll(PDO::FETCH_ASSOC);
+    ?>
 
     <table>
     <thead>
@@ -301,17 +327,27 @@ td.past {
             $text = "";
             $finalClass = "empty";
 
-            // check user activities
-            foreach($activities as $act){
-                if($act['day_date']==$date && (int)$act['hour']==(int)$hour){
-                    $text = htmlspecialchars($user['name']) . " | " . htmlspecialchars($act['status']);
-                    $finalClass = strtolower($act['status']);
-                    if($isPast) $finalClass = "past";
+            // ✅ STEP 3: Check if slot has approved reservation (visible to everyone)
+            foreach($approvedReservations as $app){
+                if($app['day_date']==$date && (int)$app['hour']==(int)$hour){
+                    $text = htmlspecialchars($app['name']);
+                    $finalClass = "approved"; // green slot
                     break;
                 }
             }
 
-            // check admin grid
+            // check user’s own reservations (overrides)
+            if(empty($text)){
+                foreach($activities as $act){
+                    if($act['day_date']==$date && (int)$act['hour']==(int)$hour){
+                        $text = htmlspecialchars($user['name']) . " | " . htmlspecialchars($act['status']);
+                        $finalClass = strtolower($act['status']);
+                        break;
+                    }
+                }
+            }
+
+            // check admin schedule
             if (empty($text) && isset($grid[$date][$hour])) {
                 $s = $grid[$date][$hour];
                 $text = htmlspecialchars($s['section']);
@@ -327,7 +363,9 @@ td.past {
         ?>
         <td class="<?php echo $finalClass; ?>"
             <?php 
-                if(!$isPast && ($finalClass=="pending" || $finalClass=="approved")) {
+                if(!$isPast && $finalClass=="approved") {
+                    echo "onclick=\"openDetailsModal('$safeDate','$safeHour')\" style='cursor:pointer;'";
+                } elseif(!$isPast && $finalClass=="pending") {
                     echo "onclick=\"openDetailsModal('$safeDate','$safeHour')\" style='cursor:pointer;'";
                 } elseif(!$isPast && $finalClass=="empty") {
                     echo "onclick=\"openReservationForm('$safeDate','$safeHour')\" style='cursor:pointer;'";
@@ -338,6 +376,7 @@ td.past {
             title="<?php 
                 if($finalClass==='past') echo 'This slot is in the past.'; 
                 elseif($finalClass==='filled') echo 'Already scheduled by admin.'; 
+                elseif($finalClass==='approved') echo 'Approved reservation. Click for details.'; 
                 else echo 'Click to reserve.'; 
             ?>">
             <?php echo $text; ?>
@@ -346,9 +385,10 @@ td.past {
     </tr>
     <?php endforeach; ?>
 </tbody>
-
 </table>
 </section>
+
+
 
 <!-- Reservation Modal -->
 <div id="reservationForm">

@@ -15,7 +15,7 @@ $res_date_from = $_GET['res_date_from'] ?? '';
 $res_date_to   = $_GET['res_date_to'] ?? '';
 $res_status    = $_GET['res_status'] ?? '';
 
-$user_department     = $_GET['user_department'] ?? '';
+$user_department     = $_GET['user_section'] ?? '';
 $user_classification = $_GET['user_classification'] ?? '';
 
 // --- Fetch Reservations ---
@@ -23,7 +23,7 @@ $reservations = [];
 if ($activeTab === 'reservations') {
     $res_query = "
         SELECT r.id, r.day_date, r.hour, r.reservation_type, r.reason, r.status, r.created_at,
-               u.name AS user_name, u.department, u.classification
+               u.name AS user_name, u.section, u.classification
         FROM reservations r
         LEFT JOIN users u ON r.user_id = u.id
         WHERE 1
@@ -42,11 +42,11 @@ if ($activeTab === 'reservations') {
 // --- Fetch Users ---
 $users = [];
 if ($activeTab === 'users') {
-    $user_query = "SELECT id, name, department, classification, created_at FROM users WHERE 1";
+    $user_query = "SELECT id, name, section, classification, created_at FROM users WHERE 1";
     $user_params = [];
     if (!empty($user_department)) {
-        $user_query .= " AND department = :dept";
-        $user_params[':dept'] = $user_department;
+        $user_query .= " AND section = :sect";
+        $user_params[':sect'] = $user_department;
     }
     if (!empty($user_classification)) {
         $user_query .= " AND classification = :class";
@@ -265,7 +265,7 @@ body {
         <div class="card">
           <p><strong>ID</strong>: <?= htmlspecialchars($r['id']) ?></p>
           <p><strong>User</strong>: <?= htmlspecialchars($r['user_name']) ?></p>
-          <p><strong>Department</strong>: <?= htmlspecialchars($r['department']) ?></p>
+          <p><strong>Year and Section</strong>: <?= htmlspecialchars($r['section']) ?></p>
           <p><strong>Classification</strong>: <?= htmlspecialchars($r['classification']) ?></p>
           <p><strong>Date</strong>: <?= htmlspecialchars($r['day_date']) ?></p>
           <p><strong>Hour</strong>: <?= date("g A", strtotime($r['hour'].":00")) ?></p>
@@ -307,7 +307,7 @@ body {
         <div class="card">
           <p><strong>ID</strong>: <?= htmlspecialchars($u['id']) ?></p>
           <p><strong>Name</strong>: <?= htmlspecialchars($u['name']) ?></p>
-          <p><strong>Department</strong>: <?= htmlspecialchars($u['department']) ?></p>
+          <p><strong>Year and Section</strong>: <?= htmlspecialchars($u['section']) ?></p>
           <p><strong>Classification</strong>: <?= htmlspecialchars($u['classification']) ?></p>
           <p><strong>Created At</strong>: <?= htmlspecialchars($u['created_at']) ?></p>
         </div>

@@ -43,9 +43,6 @@ for ($i = 7; $i < 14; $i++) {
 // Hours 7 AM to 9 PM
 $hours = range(7, 21);
 
-// Options for dropdowns
-$departments = ['IT', 'BSHM', 'EDUC'];
-$year_levels = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
